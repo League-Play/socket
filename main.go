@@ -18,7 +18,7 @@ func serveWs(pool *Pool, w http.ResponseWriter, r *http.Request) {
 	}
 
 	pool.Register <- client
-	client.Conn.WriteJSON(RequestUserInfoResponse{})
+	client.Conn.WriteJSON(RequestUserInfoResponse{ResponseId: "UserInfoRequest"})
 	client.Read()
 }
 

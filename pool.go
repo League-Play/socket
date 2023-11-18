@@ -49,7 +49,7 @@ func (pool *Pool) Start() {
 			switch a := action.(type) {
 			case RedirectAction:
 				var ra RedirectAction = a
-				if value, exists := pool.Users[ra.UserId]; exists {
+				if _, exists := pool.Users[ra.UserId]; exists {
 					// Send back response
 				} else {
 					pool.Users[ra.UserId] = UserInfo{
