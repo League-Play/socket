@@ -6,6 +6,7 @@ type Action interface {
 
 type ActionWrapper struct {
 	ActionId string `json:"action"`
+	Client *Client 
 }
 
 func (aw ActionWrapper) Type() string {
@@ -38,4 +39,12 @@ type ReadyAction struct {
 
 func (ra ReadyAction) Type() string {
 	return ra.ActionId
+}
+
+type UserInfoAction struct {
+	UserId string `json:"user"`
+}
+
+func (uia UserInfoAction) Type() string {
+	return uia.UserId
 }

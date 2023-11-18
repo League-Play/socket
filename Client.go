@@ -40,6 +40,7 @@ func (c *Client) Read() {
 			return
 		}
 		fmt.Printf("Message Received: %+v\n", action)
+		action.Client = c
 		switch action.ActionId {
 		case "Redirect":
 			var redirectAction RedirectAction
@@ -66,6 +67,16 @@ func (c *Client) Read() {
 			}
 			fmt.Printf("Message Received: %+v\n", readyAction)
 			c.Pool.Actions <- readyAction
+		
+		case "UserInfo":
+			fmt.Println("in user info")
+			var userInfoAction UserInfoAction
+			if err := json.Unmarshal(p, &userInfoAction); err != nil {
+				fmt.Println("Error decoding JSON: ", err)
+				return
+			}
+			fmt.Printf("Message Received: %+v\n", userInfoAction)
+			c.Pool.Actions <- userInfoAction
 		}
 	}
 }

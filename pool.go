@@ -2,15 +2,25 @@ package main
 
 import "fmt"
 
+type Actions struct {
+	Action Action
+	Client Client
+}
+
 type Pool struct {
 	Register   chan *Client
 	Unregister chan *Client
 	Clients    map[*Client]bool
-	Actions    chan Action
+	Actions    chan Actions
 	Users      map[string]UserInfo
 }
 
-type Flow int
+//Todo: refactor to group together into a Flow
+// const (
+// 	Home = iota
+// 	Lobby = iota
+// 	GameReport = iota
+// )
 
 // Todo: Refactor into enum
 type UserInfo struct {
@@ -47,6 +57,17 @@ func (pool *Pool) Start() {
 			break
 		case action := <-pool.Actions:
 			switch a := action.(type) {
+			case UserInfoAction:
+				var uia UserInfoAction = a
+				if userInfo, exists := pool.Users[uia.UserId]; exists {
+					a.Client.Conn.WriteJSON(FlowResponse{ResponseId: "FlowResponse", Flow: userInfo.Flow})
+				} else {
+					var userInfo UserInfo = UserInfo{
+						Flow: "Home",
+					}
+					pool.Users[uia.UserId] = userInfo
+				}
+
 			case RedirectAction:
 				var ra RedirectAction = a
 				if _, exists := pool.Users[ra.UserId]; exists {
