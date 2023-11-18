@@ -2,16 +2,16 @@ package main
 
 import "fmt"
 
-type Actions struct {
+type ClientAction struct {
 	Action Action
-	Client Client
+	Client *Client
 }
 
 type Pool struct {
 	Register   chan *Client
 	Unregister chan *Client
 	Clients    map[*Client]bool
-	Actions    chan Actions
+	Actions    chan ClientAction
 	Users      map[string]UserInfo
 }
 
@@ -32,7 +32,7 @@ func NewPool() *Pool {
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
 		Clients:    make(map[*Client]bool),
-		Actions:    make(chan Action),
+		Actions:    make(chan ClientAction),
 		Users:      make(map[string]UserInfo),
 	}
 }
@@ -43,29 +43,35 @@ func (pool *Pool) Start() {
 		case client := <-pool.Register:
 			pool.Clients[client] = true
 			fmt.Println("Size of Connection Pool: ", len(pool.Clients))
-			for client, _ := range pool.Clients {
-				fmt.Println(client)
-				client.Conn.WriteJSON(Message{Type: 1, Body: "New User Joined..."})
-			}
+			// for client, _ := range pool.Clients {
+			// 	fmt.Println(client)
+			// 	client.Conn.WriteJSON(Message{Type: 1, Body: "New User Joined..."})
+			// }
 			break
 		case client := <-pool.Unregister:
 			delete(pool.Clients, client)
-			fmt.Println("Size of Connection Pool: ", len(pool.Clients))
-			for client, _ := range pool.Clients {
-				client.Conn.WriteJSON(Message{Type: 1, Body: "User Disconnected..."})
-			}
+			// fmt.Println("Size of Connection Pool: ", len(pool.Clients))
+			// for client, _ := range pool.Clients {
+			// 	client.Conn.WriteJSON(Message{Type: 1, Body: "User Disconnected..."})
+			// }
 			break
-		case action := <-pool.Actions:
-			switch a := action.(type) {
+		case ca := <-pool.Actions:
+			switch a := ca.Action.(type) {
 			case UserInfoAction:
 				var uia UserInfoAction = a
 				if userInfo, exists := pool.Users[uia.UserId]; exists {
-					a.Client.Conn.WriteJSON(FlowResponse{ResponseId: "FlowResponse", Flow: userInfo.Flow})
+					fmt.Println("Writing response 1")
+					ca.Client.Conn.WriteJSON(FlowResponse{ResponseId: "FlowResponse", Flow: userInfo.Flow})
 				} else {
 					var userInfo UserInfo = UserInfo{
 						Flow: "Home",
 					}
 					pool.Users[uia.UserId] = userInfo
+					fmt.Println("Writing response")
+					// for client, _ := range pool.Clients {
+					// 	// client.Conn.WriteJSON(Message{Type: 1, Body: "User Disconnected..."})
+					// }
+					ca.Client.Conn.WriteJSON(FlowResponse{ResponseId: "FlowResponse", Flow: userInfo.Flow})
 				}
 
 			case RedirectAction:
@@ -80,7 +86,6 @@ func (pool *Pool) Start() {
 			case JoinLobbyAction:
 
 			}
-			fmt.Printf("%T\n", action)
 			// fmt.Println("Sending message to all clients in Pool")
 			// for client, _ := range pool.Clients {
 			//     if err := client.Conn.WriteJSON(message); err != nil {

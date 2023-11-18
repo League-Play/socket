@@ -6,7 +6,6 @@ type Action interface {
 
 type ActionWrapper struct {
 	ActionId string `json:"action"`
-	Client *Client 
 }
 
 func (aw ActionWrapper) Type() string {

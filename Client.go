@@ -40,7 +40,6 @@ func (c *Client) Read() {
 			return
 		}
 		fmt.Printf("Message Received: %+v\n", action)
-		action.Client = c
 		switch action.ActionId {
 		case "Redirect":
 			var redirectAction RedirectAction
@@ -49,7 +48,10 @@ func (c *Client) Read() {
 				return
 			}
 			fmt.Printf("Message Received: %+v\n", redirectAction)
-			c.Pool.Actions <- redirectAction
+			c.Pool.Actions <- ClientAction{
+				Action: redirectAction,
+				Client: c,
+			}
 		case "JoinLobby":
 			var joinLobbyAction JoinLobbyAction
 			if err := json.Unmarshal(p, &joinLobbyAction); err != nil {
@@ -57,7 +59,10 @@ func (c *Client) Read() {
 				return
 			}
 			fmt.Printf("Message Received: %+v\n", joinLobbyAction)
-			c.Pool.Actions <- joinLobbyAction
+			c.Pool.Actions <- ClientAction{
+				Action: joinLobbyAction,
+				Client: c,
+			}
 
 		case "Ready":
 			var readyAction ReadyAction
@@ -66,8 +71,11 @@ func (c *Client) Read() {
 				return
 			}
 			fmt.Printf("Message Received: %+v\n", readyAction)
-			c.Pool.Actions <- readyAction
-		
+			c.Pool.Actions <- ClientAction{
+				Action: readyAction,
+				Client: c,
+			}
+
 		case "UserInfo":
 			fmt.Println("in user info")
 			var userInfoAction UserInfoAction
@@ -76,7 +84,10 @@ func (c *Client) Read() {
 				return
 			}
 			fmt.Printf("Message Received: %+v\n", userInfoAction)
-			c.Pool.Actions <- userInfoAction
+			c.Pool.Actions <- ClientAction{
+				Action: userInfoAction,
+				Client: c,
+			}
 		}
 	}
 }
