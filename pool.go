@@ -63,8 +63,9 @@ func (pool *Pool) Start() {
 					ca.Client.Conn.WriteJSON(FlowResponse{ResponseId: "FlowResponse", Flow: user.Flow})
 				} else {
 					var user User = User{
-						UserId: uia.UserId,
-						Flow:   "Home",
+						UserId:   uia.UserId,
+						Flow:     "Home",
+						Username: "username",
 					}
 					pool.Users = append(pool.Users, user)
 					ca.Client.Conn.WriteJSON(FlowResponse{ResponseId: "FlowResponse", Flow: user.Flow})
@@ -74,7 +75,7 @@ func (pool *Pool) Start() {
 				var ra RedirectAction = a
 				var user *User = findUser(pool.Users, ra.UserId)
 				if user != nil {
-					// Send back response
+					ca.Client.Conn.WriteJSON(FlowResponse{ResponseId: "FlowResponse", Flow: user.Flow})
 				} else {
 					var user User = User{
 						UserId: ra.UserId,
@@ -83,7 +84,14 @@ func (pool *Pool) Start() {
 					pool.Users = append(pool.Users, user)
 				}
 			case JoinLobbyAction:
-
+				var jla JoinLobbyAction = a
+				// todo: integrate username with LeaguePlay app. Right now, it's just expecting the hardcoded "username"
+				var user *User = findUsername(pool.Users, jla.Username)
+				if user != nil {
+					ca.Client.Conn.WriteJSON(FlowResponse{ResponseId: "FlowResponse", Flow: "Lobby"})
+				} else {
+					// invalid username
+				}
 			}
 			// fmt.Println("Sending message to all clients in Pool")
 			// for client, _ := range pool.Clients {
@@ -99,6 +107,15 @@ func (pool *Pool) Start() {
 func findUser(users []User, userId string) *User {
 	for _, user := range users {
 		if user.UserId == userId {
+			return &user
+		}
+	}
+	return nil
+}
+
+func findUsername(users []User, username string) *User {
+	for _, user := range users {
+		if user.Username == username {
 			return &user
 		}
 	}
