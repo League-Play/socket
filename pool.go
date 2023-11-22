@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type ClientAction struct {
 	Action Action
@@ -13,6 +15,7 @@ type Pool struct {
 	Clients    map[*Client]bool
 	Actions    chan ClientAction
 	Users      []User
+	Lobbys     []Lobby
 }
 
 //Todo: refactor to group together into a Flow
@@ -27,10 +30,11 @@ type User struct {
 	UserId   string
 	Username string
 	Flow     string
+	IsReady  bool
 }
 
 type Lobby struct {
-	Users []User
+	Users map[string]User
 }
 
 func NewPool() *Pool {
@@ -40,6 +44,7 @@ func NewPool() *Pool {
 		Clients:    make(map[*Client]bool),
 		Actions:    make(chan ClientAction),
 		Users:      make([]User, 0),
+		Lobbys:     []Lobby{{Users: make(map[string]User)}},
 	}
 }
 
@@ -62,10 +67,11 @@ func (pool *Pool) Start() {
 				if user != nil {
 					ca.Client.Conn.WriteJSON(FlowResponse{ResponseId: "FlowResponse", Flow: user.Flow})
 				} else {
+					// set userId as username (temporary for now)
 					var user User = User{
 						UserId:   uia.UserId,
 						Flow:     "Home",
-						Username: "username",
+						Username: uia.UserId,
 					}
 					pool.Users = append(pool.Users, user)
 					ca.Client.Conn.WriteJSON(FlowResponse{ResponseId: "FlowResponse", Flow: user.Flow})
@@ -85,21 +91,40 @@ func (pool *Pool) Start() {
 				}
 			case JoinLobbyAction:
 				var jla JoinLobbyAction = a
-				// todo: integrate username with LeaguePlay app. Right now, it's just expecting the hardcoded "username"
+				// todo: integrate username with LeaguePlay app. Right now, it's just considering the userId to be the username
 				var user *User = findUsername(pool.Users, jla.Username)
 				if user != nil {
 					ca.Client.Conn.WriteJSON(FlowResponse{ResponseId: "FlowResponse", Flow: "Lobby"})
+					lobby := pool.Lobbys[0] // Assuming only one lobby for simplicity
+					// Check if the user is already in the lobby
+					if _, exists := lobby.Users[user.Username]; !exists {
+						lobby.Users[user.Username] = *user // Add user to the lobby if not already present
+					}
+					// Send lobby response to the client
+					for client, _ := range pool.Clients {
+						for _, currentUser := range lobby.Users {
+							client.Conn.WriteJSON(JoinLobbyResponse{ResponseId: "JoinLobbyResponse", Username: currentUser.Username})
+						}
+					}
+
 				} else {
 					// invalid username
 				}
+			case ReadyAction:
+				var ra ReadyAction = a
+				var user *User = findUsername(pool.Users, ra.Username)
+				// change user status to ready in the lobby
+				if user != nil {
+					user.IsReady = ra.IsReady
+					fmt.Println("user ready status: ", user.IsReady)
+					for client, _ := range pool.Clients {
+						client.Conn.WriteJSON(ReadyResponse{ResponseId: "ReadyResponse", Username: user.Username, IsReady: user.IsReady})
+					}
+				}
 			}
+
 			// fmt.Println("Sending message to all clients in Pool")
-			// for client, _ := range pool.Clients {
-			//     if err := client.Conn.WriteJSON(message); err != nil {
-			//         fmt.Println(err)
-			//         return
-			//     }
-			// }
+
 		}
 	}
 }

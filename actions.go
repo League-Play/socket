@@ -33,7 +33,7 @@ func (jla JoinLobbyAction) Type() string {
 type ReadyAction struct {
 	ActionId string `json:"action"`
 	Username string `json:"username"`
-	Ready    bool   `json:"ready"`
+	IsReady  bool   `json:"isReady"`
 }
 
 func (ra ReadyAction) Type() string {
