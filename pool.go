@@ -103,7 +103,9 @@ func (pool *Pool) Start() {
 					// Send lobby response to the client
 					for client, _ := range pool.Clients {
 						for _, currentUser := range lobby.Users {
-							client.Conn.WriteJSON(JoinLobbyResponse{ResponseId: "JoinLobbyResponse", Username: currentUser.Username})
+							fmt.Println(currentUser, currentUser.IsReady)
+							// to do: add ready status to join lobby response for the case: user1 readies, user2 joins lobby but it shows user1 as not ready
+							client.Conn.WriteJSON(JoinLobbyResponse{ResponseId: "JoinLobbyResponse", Username: currentUser.Username, IsReady: currentUser.IsReady})
 						}
 					}
 
@@ -117,14 +119,12 @@ func (pool *Pool) Start() {
 				if user != nil {
 					user.IsReady = ra.IsReady
 					fmt.Println("user ready status: ", user.IsReady)
+					pool.Lobbys[0].Users[user.Username] = *user
 					for client, _ := range pool.Clients {
 						client.Conn.WriteJSON(ReadyResponse{ResponseId: "ReadyResponse", Username: user.Username, IsReady: user.IsReady})
 					}
 				}
 			}
-
-			// fmt.Println("Sending message to all clients in Pool")
-
 		}
 	}
 }

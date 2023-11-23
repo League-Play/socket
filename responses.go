@@ -12,6 +12,7 @@ type FlowResponse struct {
 type JoinLobbyResponse struct {
 	ResponseId string `json:"responseId"`
 	Username   string `json:"username"`
+	IsReady    bool   `json:"isReady"`
 }
 
 type ReadyResponse struct {
